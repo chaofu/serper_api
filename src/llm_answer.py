@@ -18,6 +18,7 @@ class GPTAnswer:
             self.config = yaml.safe_load(file)
         self.model_name = self.config["model_name"]
         self.api_key = self.config["openai_api_key"]
+        self.api_base_url = self.config["api_base_url"]
 
     def _format_reference(self, relevant_docs_list, link_list):
         # Format the references from the retrieved documents for use in the prompt
@@ -46,8 +47,15 @@ class GPTAnswer:
 
     def get_answer(self, query, relevant_docs, language, output_format, profile):
         # Create an instance of ChatOpenAI and generate an answer
-        llm = ChatOpenAI(model_name=self.model_name, openai_api_key=self.api_key, temperature=0.0, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
-        
+        # llm = ChatOpenAI(model_name=self.model_name, openai_api_key=self.api_key, temperature=0.0, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
+        llm = ChatOpenAI(
+                    streaming=False,
+                    verbose=True,   # 为true 的时候，不写callback 这个，也会默认 callback
+                    # callbacks=[callback],
+                    openai_api_key=self.api_key,
+                    openai_api_base=self.api_base_url,
+                    model_name=self.model_name
+        )
         template = self.config["template"]
         prompt_template = PromptTemplate(
             input_variables=["profile", "context_str", "language", "query", "format"],

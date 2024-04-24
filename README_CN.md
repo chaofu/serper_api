@@ -52,7 +52,7 @@ https://github.com/Wilson-ZheLin/GPT-4-Web-Browsing/assets/145169519/6406d20c-ef
 1. 安装所需的依赖包 (中国大陆可以附加 `-i https://pypi.tuna.tsinghua.edu.cn/simple`):
 
 ```
-pip install -r requirements.txt
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 2. 保存你的 **API Keys** 到 `config.yaml`

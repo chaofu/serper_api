@@ -1,6 +1,7 @@
 serper_api_key: ""
-openai_api_key: ""
-model_name: "gpt-3.5-turbo-16k"
+openai_api_key: "EMPTY"
+api_base_url: "http://192.168.0.123:20000/v1"
+model_name: "Qwen-7B-Chat"
 template: |
   Web search result:
   {context_str}
