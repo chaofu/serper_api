@@ -49,9 +49,9 @@ class GPTAnswer:
         # Create an instance of ChatOpenAI and generate an answer
         # llm = ChatOpenAI(model_name=self.model_name, openai_api_key=self.api_key, temperature=0.0, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
         llm = ChatOpenAI(
-                    streaming=False,
+                    streaming=True,
                     verbose=True,   # 为true 的时候，不写callback 这个，也会默认 callback
-                    # callbacks=[callback],
+                    callbacks=[StreamingStdOutCallbackHandler()],
                     openai_api_key=self.api_key,
                     openai_api_base=self.api_base_url,
                     model_name=self.model_name
@@ -85,7 +85,6 @@ if __name__ == "__main__":
     retriever = EmbeddingRetriever()
     relevant_docs_list = retriever.retrieve_embeddings(web_contents, serper_response['links'], query)
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
-    print(formatted_relevant_docs)
 
     # Measure the time taken to get an answer from the GPT model
     start = time.time()
@@ -93,5 +92,6 @@ if __name__ == "__main__":
     # Generate answer from ChatOpenAI
     ai_message_obj = content_processor.get_answer(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
     answer = ai_message_obj.content + '\n'
+    print(answer)
     end = time.time()
     print("\n\nGPT Answer time:", end - start, "s")
