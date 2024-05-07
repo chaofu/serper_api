@@ -73,7 +73,7 @@ class GPTAnswer:
 # Example usage
 if __name__ == "__main__":
     content_processor = GPTAnswer()
-    query = "What happened to Silicon Valley Bank"
+    query = "Ubuntu 22.04系统如何配置静态IP"
     output_format = "" # User can specify output format
     profile = "" # User can define the role for LLM
 
