@@ -33,7 +33,7 @@ class EmbeddingRetriever:
             # Select one of the models from OpenAIEmbeddings and text2vec-base-chinese to suit your needs:
             
             # OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=self.config["openai_api_key"])
-            SentenceTransformerEmbeddings(model_name="/data/zhangcf/ollama/bge-reranker-large")
+            SentenceTransformerEmbeddings(model_name="/usr/local/fits/iOpsBot-dev/backend/core/local_models/stella-mrl-large-zh-v3.5-1792d")
         )
 
         # Create a retriever from the database to find relevant documents
