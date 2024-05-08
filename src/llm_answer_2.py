@@ -170,6 +170,8 @@ async def chat_llm(request: Request):
     retriever = EmbeddingRetriever()
     relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
+    print("formatted_relevant_docs")
+    print(formatted_relevant_docs)
     # print(formatted_relevant_docs)
     hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
    
