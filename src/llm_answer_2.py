@@ -24,6 +24,7 @@ import yaml
 from fetch_web_content import WebContentFetcher
 from retrieval import EmbeddingRetriever
 from langchain.schema import HumanMessage
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 api_base_url = "http://192.168.0.123:20000/v1"
 api_key = "EMPTY"
@@ -240,12 +241,10 @@ async def chat_llm(request: Request):
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
     # print(formatted_relevant_docs)
     hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
-    callback = AsyncIteratorCallbackHandler()
-    callbacks = [callback]
     new_model = ChatOpenAI(
             streaming=True,
             verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
-            callbacks=callbacks,
+            callbacks=[StreamingStdOutCallbackHandler()],
             openai_api_key=api_key,
             openai_api_base=api_base_url,
             model_name=LLM_MODEL,
@@ -277,7 +276,17 @@ async def chat_llm(request: Request):
         # 创建输入模板，将输入文本和用户输入的上下文信息进行合并
         input_msg = History(role="user", content=prompt_template).to_msg_template(False)
         chat_prompt = ChatPromptTemplate.from_messages([input_msg])
-
+        callback = AsyncIteratorCallbackHandler()
+        callbacks = [callback]
+        new_model = ChatOpenAI(
+            streaming=True,
+            verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
+            callbacks=callbacks,
+            openai_api_key=api_key,
+            openai_api_base=api_base_url,
+            model_name=LLM_MODEL,
+            max_tokens=4000,
+        )
         #chain = LLMChain(llm=new_model)
         # print("llm-==", model)
         chain = LLMChain(prompt=chat_prompt, llm=new_model)
