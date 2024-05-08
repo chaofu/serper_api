@@ -238,9 +238,10 @@ async def chat_llm(request: Request):
     retriever = EmbeddingRetriever()
     relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
-    print(formatted_relevant_docs)
+    # print(formatted_relevant_docs)
     #chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
-    async def chat_iterator(query) -> AsyncIterable[str]:
+   
+    async def chat_iterator(query,formatted_relevant_docs) -> AsyncIterable[str]:
         callback = AsyncIteratorCallbackHandler()
         callbacks = [callback]
         new_model = ChatOpenAI(
@@ -252,6 +253,9 @@ async def chat_llm(request: Request):
             model_name=LLM_MODEL,
             max_tokens=4000,
         )
+        gpt_answer = new_model([HumanMessage(content=chat_prompt)])
+        print(gpt_answer)
+
 
         # LLMChain 被认为是查询 LLM 对象最常用的方法之一。它根据提示模板将提供的输入键值和内存键值（如果存在）进行格式化，
         # 然后将格式化后的字符串发送给 LLM，LLM 生成并返回输出结果
@@ -306,7 +310,7 @@ async def chat_llm(request: Request):
 
         await task
 
-    return StreamingResponse(chat_iterator(query), media_type="text/event-stream")
+    return StreamingResponse(chat_iterator(query,formatted_relevant_docs), media_type="text/event-stream")
 
 
 if __name__ == '__main__':
