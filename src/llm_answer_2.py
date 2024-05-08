@@ -268,7 +268,7 @@ async def chat_llm(request: Request):
         # 创建输入模板，将输入文本和用户输入的上下文信息进行合并
         # input_msg = History(role="user", content=prompt_template).to_msg_template(False)
         # chat_prompt = ChatPromptTemplate.from_messages([input_msg])
-        callback2 = StreamingStdOutCallbackHandler()
+        callback2 = AsyncIteratorCallbackHandler()
         new_model = ChatOpenAI(
             streaming=True,
             verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
@@ -285,7 +285,7 @@ async def chat_llm(request: Request):
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
             #chain.acall({"context_str": formatted_relevant_docs, "language":"zh", profile:"", "query": query, "format":""}),
-            new_model([HumanMessage(content=hao_chat_prompt)]),
+            new_model.agenerate(messages=[[HumanMessage(content=hao_chat_prompt)]]),
             callback2.done),
         )
 
