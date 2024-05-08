@@ -270,6 +270,7 @@ async def chat_llm(request: Request):
   Output Format: {format}
   Please organize your output according to the Output Format. If the Output Format is empty, you can ignore it."""
         )
+        # 创建输入模板，将输入文本和用户输入的上下文信息进行合并
         input_msg = History(role="user", content=prompt_template).to_msg_template(False)
         chat_prompt = ChatPromptTemplate.from_messages([input_msg])
 
