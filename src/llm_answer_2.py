@@ -127,6 +127,9 @@ class GPTAnswer:
         # print("\n\nThe message sent to LLM:\n", summary_prompt)
         print("\n\n", "="*30, "GPT's Answer: ", "="*30, "\n")
         #gpt_answer = llm([HumanMessage(content=summary_prompt)])
+        # 确保 summary_prompt_dict 是一个字典格式
+        # 然后将其转换为 HumanMessage 对象，以便 LLMChain 可以使用
+        summary_prompt = [HumanMessage(content=summary_prompt)]
 
         return summary_prompt
 
@@ -266,7 +269,7 @@ async def chat_llm(request: Request):
         # print(chain({"商品": "牛奶"}))
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
-            chain.acall(query=query),
+            chain.acall(),
             callback.done),
         )
 
