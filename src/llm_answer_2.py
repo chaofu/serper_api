@@ -23,6 +23,7 @@ import os
 import yaml
 from fetch_web_content import WebContentFetcher
 from retrieval import EmbeddingRetriever
+from langchain.schema import HumanMessage
 
 api_base_url = "http://192.168.0.123:20000/v1"
 api_key = "EMPTY"
@@ -259,13 +260,13 @@ async def chat_llm(request: Request):
         # input_msg = History(role="user", content=prompt_template).to_msg_template(False)
         # chat_prompt = ChatPromptTemplate.from_messages([input_msg])
 
-        chain = LLMChain(prompt=chat_prompt, llm=new_model)
+        chain = LLMChain(llm=new_model)
         # print("llm-==", model)
         # chain = LLMChain(prompt=prompt, llm=new_model)
         # print(chain({"商品": "牛奶"}))
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
-            chain.acall({"context": context, "question": query}),
+            chain.acall([HumanMessage(content=chat_prompt)]),
             callback.done),
         )
 
