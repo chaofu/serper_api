@@ -30,9 +30,6 @@ api_base_url = "http://192.168.0.123:20000/v1"
 api_key = "EMPTY"
 LLM_MODEL = "Qwen1.5-7B-Chat"
 
-human_prompt = "{input}"
-human_message_template = HumanMessagePromptTemplate.from_template(human_prompt)
-
 from pydantic import BaseModel, Field
 from langchain.prompts.chat import ChatMessagePromptTemplate
 
@@ -152,73 +149,7 @@ async def wrap_done(fn: Awaitable, event: asyncio.Event):
 app = FastAPI()
 
 
-@app.get("/stream")
-async def root(request: Request):
-    async def event_generator(request: Request):
-        res_str = "双天至尊真是一部好的电视剧！！！"
-        for i in res_str:
-            if await request.is_disconnected():
-                print("连接已中断")
-                break
-            data = f'"event": "message"\n"data":{i}\n'
-            yield data
-            await asyncio.sleep(1)
-
-    g = event_generator(request)
-    return StreamingResponse(g, media_type="text/event-stream")
-
-@app.get("/hello")
-def hello(request: Request):
-    return "hello"
-
-
-@app.get("/chat/{query}")
-async def hao(request: Request):
-    query = request.path_params['query']
-    print("query===", query)
-    openai.api_key = "EMPTY"
-    print(f"{openai.api_key=}")
-    openai.api_base = api_base_url
-    print(f"{openai.api_base=}")
-    msg = {"stream": True,
-           "model": "chatglm3-6b",
-           "messages": "您好",
-           "temperature": 0.7,
-           "n": 1
-           }
-    hao = True
-
-    async def get_response(query):
-
-        try:
-            response = await openai.ChatCompletion.acreate(model="chatglm3-6b",
-                                                           messages=query,
-                                                           temperature=0.5,
-                                                           max_tokens=2048,
-                                                           top_p=1,
-                                                           stream=True
-                                                           )
-            if hao:
-                async for data in response:
-                    if choices := data.choices:
-                        if chunk := choices[0].get("delta", {}).get("content"):
-                            print(chunk, end="", flush=True)
-                            yield chunk
-            else:
-                if response.choices:
-                    answer = response.choices[0].message.content
-                    print(answer)
-                    yield (answer)
-        except Exception as e:
-            msg = f"获取ChatCompletion时出错：{e}"
-            logger.error(f'{e.__class__.__name__}: {msg}')
-
-    return StreamingResponse(
-        get_response(query),
-        media_type='text/event-stream',
-    )
-
-
+    
 @app.get("/chat/llm/{query}")
 async def chat_llm(request: Request):
     query = request.path_params['query']
@@ -244,7 +175,7 @@ async def chat_llm(request: Request):
    
     #gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
    # print(gpt_answer)
-    async def chat_iterator(query,formatted_relevant_docs) -> AsyncIterable[str]:
+    async def chat_iterator(query,formatted_relevant_docs,stream) -> AsyncIterable[str]:
       
         # LLMChain 被认为是查询 LLM 对象最常用的方法之一。它根据提示模板将提供的输入键值和内存键值（如果存在）进行格式化，
         # 然后将格式化后的字符串发送给 LLM，LLM 生成并返回输出结果
@@ -276,7 +207,7 @@ async def chat_llm(request: Request):
             openai_api_key=api_key,
             openai_api_base=api_base_url,
             model_name=LLM_MODEL,
-            max_tokens=4000,
+            max_tokens=20000,
         )
         #chain = LLMChain(llm=new_model)
         # print("llm-==", model)
@@ -302,6 +233,8 @@ async def chat_llm(request: Request):
             async for token in callback2.aiter():
                 answer += token
 
+            print("======================")  
+
             print(answer)
             yield json.dumps(
                 {"text": answer},
@@ -309,7 +242,7 @@ async def chat_llm(request: Request):
 
         await task
 
-    return StreamingResponse(chat_iterator(query,formatted_relevant_docs), media_type="text/event-stream")
+    return StreamingResponse(chat_iterator(query,formatted_relevant_docs,stream), media_type="text/event-stream")
 
 
 if __name__ == '__main__':
