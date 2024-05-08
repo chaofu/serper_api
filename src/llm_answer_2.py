@@ -129,7 +129,7 @@ class GPTAnswer:
         #gpt_answer = llm([HumanMessage(content=summary_prompt)])
         # 确保 summary_prompt_dict 是一个字典格式
         # 然后将其转换为 HumanMessage 对象，以便 LLMChain 可以使用
-        summary_prompt = [HumanMessage(content=summary_prompt)]
+        # summary_prompt = [HumanMessage(content=summary_prompt)]
 
         return summary_prompt
 
@@ -260,7 +260,7 @@ async def chat_llm(request: Request):
         #     '<问题>{{ question }}</问题>\n'
         # )
         # input_msg = History(role="user", content=prompt_template).to_msg_template(False)
-        # chat_prompt = ChatPromptTemplate.from_messages([input_msg])
+        chat_prompt = ChatPromptTemplate.from_messages([chat_prompt])
 
         #chain = LLMChain(llm=new_model)
         # print("llm-==", model)
