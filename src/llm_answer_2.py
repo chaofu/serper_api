@@ -157,7 +157,7 @@ async def chat_llm(request: Request):
     stream = True
 
     content_processor = GPTAnswer()
-    query = "Ubuntu 22.04系统如何配置静态IP"
+    # query = "Ubuntu 22.04系统如何配置静态IP"
     output_format = "" # User can specify output format
     profile = "" # User can define the role for LLM
 
@@ -176,29 +176,6 @@ async def chat_llm(request: Request):
     #gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
    # print(gpt_answer)
     async def chat_iterator(query,formatted_relevant_docs,stream) -> AsyncIterable[str]:
-      
-        # LLMChain 被认为是查询 LLM 对象最常用的方法之一。它根据提示模板将提供的输入键值和内存键值（如果存在）进行格式化，
-        # 然后将格式化后的字符串发送给 LLM，LLM 生成并返回输出结果
-        # 生成提示语模板，需要用"""text"""包裹文本，同时用花括号{}包裹随用户输入而改变的部分
-        prompt_template =  (
-            """Web search result:
-  {context_str}
-  
-  Instructions: You are a/an {profile}. Using the provided web search results, write a comprehensive and detailed reply to the given query. 
-  Make sure to cite results using [number] notation after the reference.
-  At the end of the answer, list the corresponding references with indexes, each reference contains the urls and quoted sentences from the web search results by the order you marked in the answer above and these sentences should be exactly the same as in the web search results.
-  Here is an example of a reference:
-      [1] URL: https://www.pocketgamer.biz/news/81670/tencent-and-netease-dominated-among-chinas-top-developers-in-q1/
-          Quoted sentence: Tencent accounted for roughly 50% of domestic market revenue for the quarter, compared to 40% in Q1 2022.
-  
-  Answer in language: {language}
-  Query: {query}
-  Output Format: {format}
-  Please organize your output according to the Output Format. If the Output Format is empty, you can ignore it."""
-        )
-        # 创建输入模板，将输入文本和用户输入的上下文信息进行合并
-        # input_msg = History(role="user", content=prompt_template).to_msg_template(False)
-        # chat_prompt = ChatPromptTemplate.from_messages([input_msg])
         callback2 = AsyncIteratorCallbackHandler()
         new_model = ChatOpenAI(
             streaming=True,
@@ -209,10 +186,6 @@ async def chat_llm(request: Request):
             model_name=LLM_MODEL,
             max_tokens=20000,
         )
-        #chain = LLMChain(llm=new_model)
-        # print("llm-==", model)
-        # chain = LLMChain(prompt=chat_prompt, llm=new_model)
-        # print(chain({"商品": "牛奶"}))
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
             #chain.acall({"context_str": formatted_relevant_docs, "language":"zh", profile:"", "query": query, "format":""}),
