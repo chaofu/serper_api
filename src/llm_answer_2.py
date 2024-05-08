@@ -239,7 +239,6 @@ async def chat_llm(request: Request):
     async def chat_iterator(query) -> AsyncIterable[str]:
         callback = AsyncIteratorCallbackHandler()
         callbacks = [callback]
-        memory = None
         new_model = ChatOpenAI(
             streaming=True,
             verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
@@ -260,13 +259,14 @@ async def chat_llm(request: Request):
         # input_msg = History(role="user", content=prompt_template).to_msg_template(False)
         # chat_prompt = ChatPromptTemplate.from_messages([input_msg])
 
-        chain = LLMChain(llm=new_model)
+        #chain = LLMChain(llm=new_model)
         # print("llm-==", model)
-        # chain = LLMChain(prompt=prompt, llm=new_model)
+        print(chat_prompt)
+        chain = LLMChain(prompt=chat_prompt, llm=new_model)
         # print(chain({"商品": "牛奶"}))
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
-            chain.acall([HumanMessage(content=chat_prompt)]),
+            chain.acall(query=query),
             callback.done),
         )
 
