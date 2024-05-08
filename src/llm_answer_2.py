@@ -241,17 +241,9 @@ async def chat_llm(request: Request):
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
     # print(formatted_relevant_docs)
     hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
-    new_model = ChatOpenAI(
-            streaming=True,
-            verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
-            callbacks=[StreamingStdOutCallbackHandler()],
-            openai_api_key=api_key,
-            openai_api_base=api_base_url,
-            model_name=LLM_MODEL,
-            max_tokens=4000,
-        )
-    gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
-    print(gpt_answer)
+   
+    #gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
+   # print(gpt_answer)
     async def chat_iterator(query,formatted_relevant_docs) -> AsyncIterable[str]:
       
         # LLMChain 被认为是查询 LLM 对象最常用的方法之一。它根据提示模板将提供的输入键值和内存键值（如果存在）进行格式化，
@@ -274,14 +266,13 @@ async def chat_llm(request: Request):
   Please organize your output according to the Output Format. If the Output Format is empty, you can ignore it."""
         )
         # 创建输入模板，将输入文本和用户输入的上下文信息进行合并
-        input_msg = History(role="user", content=prompt_template).to_msg_template(False)
-        chat_prompt = ChatPromptTemplate.from_messages([input_msg])
-        callback = AsyncIteratorCallbackHandler()
-        callbacks = [callback]
+        # input_msg = History(role="user", content=prompt_template).to_msg_template(False)
+        # chat_prompt = ChatPromptTemplate.from_messages([input_msg])
+        callback2 = StreamingStdOutCallbackHandler()
         new_model = ChatOpenAI(
             streaming=True,
             verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
-            callbacks=callbacks,
+            callbacks=[callback2],
             openai_api_key=api_key,
             openai_api_base=api_base_url,
             model_name=LLM_MODEL,
@@ -289,17 +280,18 @@ async def chat_llm(request: Request):
         )
         #chain = LLMChain(llm=new_model)
         # print("llm-==", model)
-        chain = LLMChain(prompt=chat_prompt, llm=new_model)
+        # chain = LLMChain(prompt=chat_prompt, llm=new_model)
         # print(chain({"商品": "牛奶"}))
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
-            chain.acall({"context_str": formatted_relevant_docs, "language":"zh", profile:"", "query": query, "format":""}),
-            callback.done),
+            #chain.acall({"context_str": formatted_relevant_docs, "language":"zh", profile:"", "query": query, "format":""}),
+            new_model([HumanMessage(content=hao_chat_prompt)]),
+            callback2.done),
         )
 
         if stream:
             print("stream===",stream)
-            async for token in callback.aiter():
+            async for token in callback2.aiter():
                 # Use server-sent-events to stream the response
                 print(token, end="", flush=True)
                 yield json.dumps(
@@ -307,7 +299,7 @@ async def chat_llm(request: Request):
                     ensure_ascii=False)
         else:
             answer = ""
-            async for token in callback.aiter():
+            async for token in callback2.aiter():
                 answer += token
 
             print(answer)
