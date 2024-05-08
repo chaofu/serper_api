@@ -239,7 +239,7 @@ async def chat_llm(request: Request):
     relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
     # print(formatted_relevant_docs)
-    #chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
+    hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
    
     async def chat_iterator(query,formatted_relevant_docs) -> AsyncIterable[str]:
         callback = AsyncIteratorCallbackHandler()
@@ -253,7 +253,7 @@ async def chat_llm(request: Request):
             model_name=LLM_MODEL,
             max_tokens=4000,
         )
-        gpt_answer = new_model([HumanMessage(content=chat_prompt)])
+        gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
         print(gpt_answer)
 
 
