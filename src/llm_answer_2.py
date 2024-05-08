@@ -240,11 +240,9 @@ async def chat_llm(request: Request):
     formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
     # print(formatted_relevant_docs)
     hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
-   
-    async def chat_iterator(query,formatted_relevant_docs) -> AsyncIterable[str]:
-        callback = AsyncIteratorCallbackHandler()
-        callbacks = [callback]
-        new_model = ChatOpenAI(
+    callback = AsyncIteratorCallbackHandler()
+    callbacks = [callback]
+    new_model = ChatOpenAI(
             streaming=True,
             verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
             callbacks=callbacks,
@@ -253,10 +251,10 @@ async def chat_llm(request: Request):
             model_name=LLM_MODEL,
             max_tokens=4000,
         )
-        gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
-        print(gpt_answer)
-
-
+    gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
+    print(gpt_answer)
+    async def chat_iterator(query,formatted_relevant_docs) -> AsyncIterable[str]:
+      
         # LLMChain 被认为是查询 LLM 对象最常用的方法之一。它根据提示模板将提供的输入键值和内存键值（如果存在）进行格式化，
         # 然后将格式化后的字符串发送给 LLM，LLM 生成并返回输出结果
         # 生成提示语模板，需要用"""text"""包裹文本，同时用花括号{}包裹随用户输入而改变的部分
