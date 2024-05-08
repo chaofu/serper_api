@@ -187,6 +187,7 @@ async def chat_llm(request: Request):
             openai_api_base=api_base_url,
             model_name=LLM_MODEL,
             max_tokens=20000,
+            temperature=0
         )
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(

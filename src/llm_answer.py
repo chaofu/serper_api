@@ -54,7 +54,8 @@ class GPTAnswer:
                     callbacks=[StreamingStdOutCallbackHandler()],
                     openai_api_key=self.api_key,
                     openai_api_base=self.api_base_url,
-                    model_name=self.model_name
+                    model_name=self.model_name,
+                    temperature=0
         )
         template = self.config["template"]
         prompt_template = PromptTemplate(
