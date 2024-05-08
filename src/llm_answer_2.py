@@ -248,7 +248,8 @@ async def chat_llm(request: Request):
             callbacks=callbacks,
             openai_api_key=api_key,
             openai_api_base=api_base_url,
-            model_name=LLM_MODEL
+            model_name=LLM_MODEL,
+            max_tokens=4000,
         )
 
         # LLMChain 被认为是查询 LLM 对象最常用的方法之一。它根据提示模板将提供的输入键值和内存键值（如果存在）进行格式化，
@@ -280,7 +281,7 @@ async def chat_llm(request: Request):
         # print(chain({"商品": "牛奶"}))
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
-            chain.acall({"context_str": formatted_relevant_docs, "language":serper_response['language'], profile:"", "query": query, "format":""}),
+            chain.acall({"context_str": formatted_relevant_docs, "language":"zh", profile:"", "query": query, "format":""}),
             callback.done),
         )
 
