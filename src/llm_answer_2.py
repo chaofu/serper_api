@@ -164,7 +164,9 @@ async def chat_llm(request: Request):
     # Fetch web content based on the query
     web_contents_fetcher = WebContentFetcher(query)
     context, serper_response = web_contents_fetcher.fetch()
-    # print(context)
+    print("=================")
+    print(context)
+    print(serper_response)
     if len(context) == 0:
         hao_chat_prompt = content_processor.get_prompt(query, "", "zh", output_format, profile)
     else:
