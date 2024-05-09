@@ -1,18 +1,11 @@
 import asyncio
 import json
 import logging
-from asyncio.log import logger
 from typing import AsyncIterable, Awaitable
 
 import uvicorn
-import openai
 from langchain.callbacks import AsyncIteratorCallbackHandler
-from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts.chat import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-)
 from fastapi.responses import StreamingResponse
 
 from fastapi import FastAPI
@@ -24,47 +17,10 @@ import yaml
 from fetch_web_content import WebContentFetcher
 from retrieval import EmbeddingRetriever
 from langchain.schema import HumanMessage
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 api_base_url = "http://192.168.0.123:20000/v1"
 api_key = "EMPTY"
 LLM_MODEL = "Qwen1.5-7B-Chat"
-
-from pydantic import BaseModel, Field
-from langchain.prompts.chat import ChatMessagePromptTemplate
-
-class History(BaseModel):
-    """
-    对话历史
-    可从dict生成，如
-    h = History(**{"role":"user","content":"你好"})
-    也可转换为tuple，如
-    h.to_msy_tuple = ("human", "你好")
-    """
-    role: str = Field(...)
-    content: str = Field(...)
-
-    def to_msg_tuple(self):
-        return "ai" if self.role=="assistant" else "human", self.content
-
-    def to_msg_template(self, is_raw=True) -> ChatMessagePromptTemplate:
-        role_maps = {
-            "ai": "assistant",
-            "human": "user",
-        }
-        role = role_maps.get(self.role, self.role)
-        if is_raw: # 当前默认历史消息都是没有input_variable的文本。
-            content = "{% raw %}" + self.content + "{% endraw %}"
-        else:
-            content = self.content
-
-        return ChatMessagePromptTemplate.from_template(
-            content,
-            "jinja2",
-            role=role,
-        )
-
-
 
 class GPTAnswer:
     TOP_K = 10  # Top K documents to retrieve
@@ -79,9 +35,6 @@ class GPTAnswer:
         self.api_base_url = self.config["api_base_url"]
 
     def _format_reference(self, relevant_docs_list, link_list):
-        print("len============")
-        print("relevant_docs_list len= %d" , len(relevant_docs_list))
-        print("link_list len= %d" , len(link_list))
         # Format the references from the retrieved documents for use in the prompt
         reference_url_list = [(relevant_docs_list[i].metadata)['url'] for i in range(self.TOP_K)]
         reference_content_list = [relevant_docs_list[i].page_content for i in range(self.TOP_K)]
@@ -104,7 +57,7 @@ class GPTAnswer:
 
         # Create a formatted string of references
         formatted_reference = "\n"
-        for i in range(self.TOP_K):
+        for i in range(len(rearranged_index_list)):
             formatted_reference += ('Webpage[' + str(rearranged_index_list[i]) + '], url: ' + reference_url_list[i] + ':\n' + reference_content_list[i] + '\n\n\n')
         return formatted_reference
 
@@ -121,16 +74,6 @@ class GPTAnswer:
         return rearranged_index_list
 
     def get_prompt(self, query, relevant_docs, language, output_format, profile)->str:
-        # Create an instance of ChatOpenAI and generate an answer
-        #llm = ChatOpenAI(model_name=self.model_name, openai_api_key=self.api_key, temperature=0.0, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
-        # llm = ChatOpenAI(
-        #             streaming=True,
-        #             verbose=True,   # 为true 的时候，不写callback 这个，也会默认 callback
-        #             callbacks=[StreamingStdOutCallbackHandler()],
-        #             openai_api_key=self.api_key,
-        #             openai_api_base="https://jiekou.wlai.vip/v1/chat/completions",
-        #             model_name=self.model_name
-        # )
         template = self.config["template"]
         prompt_template = PromptTemplate(
             input_variables=["profile", "context_str", "language", "query", "format"],
@@ -139,12 +82,7 @@ class GPTAnswer:
 
         profile = "conscientious researcher" if not profile else profile
         summary_prompt = prompt_template.format(context_str=relevant_docs, language=language, query=query, format=output_format, profile=profile)
-        # print("\n\nThe message sent to LLM:\n", summary_prompt)
         print("\n\n", "="*30, "GPT's Answer: ", "="*30, "\n")
-        #gpt_answer = llm([HumanMessage(content=summary_prompt)])
-        # 确保 summary_prompt_dict 是一个字典格式
-        # 然后将其转换为 HumanMessage 对象，以便 LLMChain 可以使用
-        # summary_prompt = [HumanMessage(content=summary_prompt)]
 
         return summary_prompt
 
@@ -174,7 +112,6 @@ async def chat_llm(request: Request):
     stream = True
 
     content_processor = GPTAnswer()
-    # query = "Ubuntu 22.04系统如何配置静态IP"
     output_format = "" # User can specify output format
     profile = "" # User can define the role for LLM
 
@@ -182,30 +119,22 @@ async def chat_llm(request: Request):
     web_contents_fetcher = WebContentFetcher(query)
     context, serper_response = web_contents_fetcher.fetch()
     web_context = [item for item in context if item]
-    print("=================")
-    print(context)
-    print("===============================")
-    print(serper_response['links'])
     if len(web_context) == 0:
-        hao_chat_prompt = content_processor.get_prompt(query, "", "zh-cn", output_format, profile)
+        chat_prompt = content_processor.get_prompt(query, "", "zh-cn", output_format, profile)
     else:
         # Retrieve relevant documents using embeddings
         retriever = EmbeddingRetriever()
         relevant_docs_list = retriever.retrieve_embeddings(web_context, serper_response['links'], query)
-        print("relevant_docs_list")
-        print(relevant_docs_list)
         formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
-        # print(formatted_relevant_docs)
-        hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
+        chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
    
-    #gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
    # print(gpt_answer)
     async def chat_iterator() -> AsyncIterable[str]:
-        callback2 = AsyncIteratorCallbackHandler()
-        new_model = ChatOpenAI(
+        callback = AsyncIteratorCallbackHandler()
+        llm = ChatOpenAI(
             streaming=True,
             verbose=True,  # 为true 的时候，不写callback 这个，也会默认 callback
-            callbacks=[callback2],
+            callbacks=[callback],
             openai_api_key=api_key,
             openai_api_base=api_base_url,
             model_name=LLM_MODEL,
@@ -214,14 +143,12 @@ async def chat_llm(request: Request):
         )
         # Begin a task that runs in the background.
         task = asyncio.create_task(wrap_done(
-            #chain.acall({"context_str": formatted_relevant_docs, "language":"zh", profile:"", "query": query, "format":""}),
-            new_model.agenerate(messages=[[HumanMessage(content=hao_chat_prompt)]]),
-            callback2.done),
+            llm.agenerate(messages=[[HumanMessage(content=chat_prompt)]]),
+            callback.done),
         )
 
         if stream:
-            print("stream===",stream)
-            async for token in callback2.aiter():
+            async for token in callback.aiter():
                 # Use server-sent-events to stream the response
                 print(token, end="", flush=True)
                 yield json.dumps(
@@ -229,12 +156,9 @@ async def chat_llm(request: Request):
                     ensure_ascii=False)
         else:
             answer = ""
-            async for token in callback2.aiter():
+            async for token in callback.aiter():
                 answer += token
 
-            print("======================")  
-
-            print(answer)
             yield json.dumps(
                 {"text": answer},
                 ensure_ascii=False)
