@@ -79,6 +79,9 @@ class GPTAnswer:
         self.api_base_url = self.config["api_base_url"]
 
     def _format_reference(self, relevant_docs_list, link_list):
+        print("len============")
+        print("relevant_docs_list len= %d" , len(relevant_docs_list))
+        print("link_list len= %d" , len(link_list))
         # Format the references from the retrieved documents for use in the prompt
         reference_url_list = [(relevant_docs_list[i].metadata)['url'] for i in range(self.TOP_K)]
         reference_content_list = [relevant_docs_list[i].page_content for i in range(self.TOP_K)]
@@ -166,16 +169,17 @@ async def chat_llm(request: Request):
     context, serper_response = web_contents_fetcher.fetch()
     print("=================")
     print(context)
-    print(serper_response)
+    print("===============================")
+    print(serper_response['links'])
     if len(context) == 0:
-        hao_chat_prompt = content_processor.get_prompt(query, "", "zh", output_format, profile)
+        hao_chat_prompt = content_processor.get_prompt(query, "", "zh-cn", output_format, profile)
     else:
         # Retrieve relevant documents using embeddings
         retriever = EmbeddingRetriever()
         relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
+        print("relevant_docs_list")
+        print(relevant_docs_list)
         formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
-        print("formatted_relevant_docs")
-        print(formatted_relevant_docs)
         # print(formatted_relevant_docs)
         hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
    
