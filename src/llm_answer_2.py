@@ -200,7 +200,7 @@ async def chat_llm(request: Request):
    
     #gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
    # print(gpt_answer)
-    async def chat_iterator(query,formatted_relevant_docs,stream) -> AsyncIterable[str]:
+    async def chat_iterator() -> AsyncIterable[str]:
         callback2 = AsyncIteratorCallbackHandler()
         new_model = ChatOpenAI(
             streaming=True,
@@ -241,7 +241,7 @@ async def chat_llm(request: Request):
 
         await task
 
-    return StreamingResponse(chat_iterator(query,formatted_relevant_docs,stream), media_type="text/event-stream")
+    return StreamingResponse(chat_iterator(), media_type="text/event-stream")
 
 
 if __name__ == '__main__':
