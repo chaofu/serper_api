@@ -85,7 +85,21 @@ class GPTAnswer:
         # Format the references from the retrieved documents for use in the prompt
         reference_url_list = [(relevant_docs_list[i].metadata)['url'] for i in range(self.TOP_K)]
         reference_content_list = [relevant_docs_list[i].page_content for i in range(self.TOP_K)]
-        reference_index_list = [link_list.index(link)+1 for link in reference_url_list]
+        reference_index_list = []
+        # Get the index of each reference in the link list
+        for link in reference_url_list:
+            try:
+                # 尝试获取链接在链接列表中的索引，并加1
+                index = link_list.index(link) + 1
+            except ValueError:
+                # 如果链接不在链接列表中，可以决定如何处理
+                # 这里只是简单地打印一条消息，并继续循环
+                print(f"链接 {link} 未在链接列表中找到。")
+                index = None  # 或者你可以选择一个默认值，或者跳过这个链接
+            else:
+                # 如果没有异常，将索引添加到结果列表中
+                reference_index_list.append(index)
+
         rearranged_index_list = self._rearrange_index(reference_index_list)
 
         # Create a formatted string of references
@@ -167,16 +181,17 @@ async def chat_llm(request: Request):
     # Fetch web content based on the query
     web_contents_fetcher = WebContentFetcher(query)
     context, serper_response = web_contents_fetcher.fetch()
+    web_context = [item for item in context if item]
     print("=================")
     print(context)
     print("===============================")
     print(serper_response['links'])
-    if len(context) == 0:
+    if len(web_context) == 0:
         hao_chat_prompt = content_processor.get_prompt(query, "", "zh-cn", output_format, profile)
     else:
         # Retrieve relevant documents using embeddings
         retriever = EmbeddingRetriever()
-        relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
+        relevant_docs_list = retriever.retrieve_embeddings(web_context, serper_response['links'], query)
         print("relevant_docs_list")
         print(relevant_docs_list)
         formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
