@@ -103,7 +103,7 @@ class GPTAnswer:
                 rearranged_index_list.append(index_dict[index])
         return rearranged_index_list
 
-    def get_prompt(self, query, relevant_docs, language, output_format, profile):
+    def get_prompt(self, query, relevant_docs, language, output_format, profile)->str:
         # Create an instance of ChatOpenAI and generate an answer
         #llm = ChatOpenAI(model_name=self.model_name, openai_api_key=self.api_key, temperature=0.0, streaming=True, callbacks=[StreamingStdOutCallbackHandler()])
         # llm = ChatOpenAI(
@@ -165,15 +165,17 @@ async def chat_llm(request: Request):
     web_contents_fetcher = WebContentFetcher(query)
     context, serper_response = web_contents_fetcher.fetch()
     # print(context)
-
-    # Retrieve relevant documents using embeddings
-    retriever = EmbeddingRetriever()
-    relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
-    formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
-    print("formatted_relevant_docs")
-    print(formatted_relevant_docs)
-    # print(formatted_relevant_docs)
-    hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
+    if len(context) == 0:
+        hao_chat_prompt = content_processor.get_prompt(query, "", "zh", output_format, profile)
+    else:
+        # Retrieve relevant documents using embeddings
+        retriever = EmbeddingRetriever()
+        relevant_docs_list = retriever.retrieve_embeddings(context, serper_response['links'], query)
+        formatted_relevant_docs = content_processor._format_reference(relevant_docs_list, serper_response['links'])
+        print("formatted_relevant_docs")
+        print(formatted_relevant_docs)
+        # print(formatted_relevant_docs)
+        hao_chat_prompt = content_processor.get_prompt(query, formatted_relevant_docs, serper_response['language'], output_format, profile)
    
     #gpt_answer = new_model([HumanMessage(content=hao_chat_prompt)])
    # print(gpt_answer)
